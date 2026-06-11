@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>GroupFund Loans</title>
+  <link rel="stylesheet" href="css/loans.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <h2>GroupFund</h2>
+    <a href="../auth/dashboard.html">Dashboard</a>
+    <a href="../profile/profile.html">Profile</a>
+    <a href="../friends/friends.html">Friends</a>
+    <a href="../group/my-group.html">My Group</a>
+    <a href="../savings/savings.html">Savings</a>
+    <a class="active" href="loans.html">Loans</a>
+    <a href="#" onclick="logout()">Logout</a>
+  </aside>
+
+  <main class="main-content">
+    <button class="menu-btn" id="menuBtn">☰</button>
+    <div class="top-bar">
+      <div>
+        <h1>Loans</h1>
+        <p>Create loan groups, track EMI, and view your own EMI history.</p>
+      </div>
+      <button class="primary-btn" onclick="openLoanModal()">Apply Loan</button>
+    </div>
+
+    <section class="stats-grid">
+      <div class="stat-card"><h3>Loan Groups</h3><p id="loanGroupCount">0</p></div>
+      <div class="stat-card"><h3>Total Loan Amount</h3><p id="totalLoanAmount">₹0</p></div>
+      <div class="stat-card"><h3>Monthly EMI</h3><p id="totalMonthlyEmi">₹0</p></div>
+      <div class="stat-card"><h3>This Month Pending</h3><p id="loanPending">₹0</p></div>
+    </section>
+
+    <section class="content-card">
+      <h2>My Loan Groups</h2>
+      <div id="loanList" class="list"></div>
+    </section>
+  </main>
+</div>
+
+<div id="loanModal" class="modal-overlay">
+  <div class="modal-card enhanced-modal loan-modal-card">
+    <div class="modal-header">
+      <div>
+        <h2>Apply Loan</h2>
+        <p>Create a loan group and track member-wise EMI payments from the group Payments tab.</p>
+      </div>
+      <button class="close-btn" onclick="closeLoanModal()">Back</button>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-field full">
+        <label>Loan Group Name</label>
+        <input type="text" id="groupName" placeholder="Example: Bank Loan June">
+      </div>
+      <div class="form-field full">
+        <label>Loan Source</label>
+        <input type="text" id="loanSource" placeholder="Bank / Private / SHG">
+      </div>
+      <div class="form-field">
+        <label>Member Limit</label>
+        <input type="number" id="targetMembers" min="5" max="20" value="5" placeholder="5 to 20">
+      </div>
+      <div class="form-field">
+        <label>Loan Amount</label>
+        <input type="number" id="loanAmount" min="1" placeholder="50000" oninput="calculateEmi()">
+      </div>
+      <div class="form-field">
+        <label>Duration Months</label>
+        <input type="number" id="durationMonths" min="1" placeholder="12" oninput="calculateEmi()">
+      </div>
+      <div class="form-field">
+        <label>Interest Rate %</label>
+        <input type="number" id="interestRate" min="0" step="0.01" placeholder="12" oninput="calculateEmi()">
+      </div>
+      <div class="form-field">
+        <label>Start Date</label>
+        <input type="date" id="startDate">
+      </div>
+      <div class="form-field full">
+        <label>Monthly EMI</label>
+        <input type="number" id="monthlyEmi" min="1" placeholder="Auto calculated or enter manually">
+      </div>
+    </div>
+
+    <div class="preview-card">
+      <span>Estimated monthly EMI per member</span>
+      <strong id="emiPreviewAmount">₹0</strong>
+    </div>
+
+    <button class="submit-btn wide" onclick="createLoanGroup()">Create Loan Group</button>
+    <p id="loanMessage" class="message"></p>
+  </div>
+</div>
+
+<script src="js/loans.js"></script>
+</body>
+</html>

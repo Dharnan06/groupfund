@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>GroupFund Group Details</title>
+  <link rel="stylesheet" href="css/group-details.css">
+</head>
+<body>
+
+<div class="layout">
+
+  <aside class="sidebar" id="sidebar">
+    <h2>GroupFund</h2>
+    <a href="../auth/dashboard.html">Dashboard</a>
+    <a href="../profile/profile.html">Profile</a>
+    <a href="../friends/friends.html">Friends</a>
+    <a class="active" href="my-group.html">My Group</a>
+    <a href="../savings/savings.html">Savings</a>
+    <a href="../loans/loans.html">Loans</a>
+    <a href="#" onclick="logout()">Logout</a>
+  </aside>
+
+  <main class="main-content">
+    <button class="menu-btn" id="menuBtn">&#9776;</button>
+
+    <div class="top-bar">
+      <div>
+        <h1 id="groupTitle">Group Details</h1>
+        <p id="groupSubtitle">Manage group members, savings, and loan details.</p>
+      </div>
+
+      <button class="back-btn" onclick="goBackToGroups()">Back to My Groups</button>
+    </div>
+
+    <section class="summary-grid">
+      <div class="summary-card">
+        <h3>Group Type</h3>
+        <p id="groupType">-</p>
+      </div>
+
+      <div class="summary-card">
+        <h3>Status</h3>
+        <p id="groupStatus">-</p>
+      </div>
+
+      <div class="summary-card">
+        <h3>Members</h3>
+        <p id="memberCount">0 / 20</p>
+      </div>
+
+      <div class="summary-card">
+        <h3>Leader</h3>
+        <p id="leaderName">-</p>
+      </div>
+    </section>
+
+    <section class="tab-card">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('overview')">Overview</button>
+        <button class="tab-btn" onclick="showTab('members')">Members</button>
+        <button class="tab-btn" onclick="showTab('finance')">Savings / Loan</button>
+        <button class="tab-btn" onclick="showTab('payments')">Payments</button>
+      </div>
+
+      <div id="overviewTab" class="tab-content">
+        <h2>Overview</h2>
+        <div id="overviewContent"></div>
+      </div>
+
+      <div id="membersTab" class="tab-content hidden">
+        <div class="section-header">
+          <h2>Members</h2>
+          <button class="invite-btn" onclick="openInviteFriendModal()">Invite Friend</button>
+        </div>
+        <div id="membersList"></div>
+      </div>
+
+      <div id="financeTab" class="tab-content hidden">
+        <h2>Savings / Loan Details</h2>
+        <div id="financeContent"></div>
+      </div>
+
+      <div id="paymentsTab" class="tab-content hidden">
+        <div class="section-header">
+          <h2>Payments</h2>
+          <button class="invite-btn" onclick="loadPayments()">Refresh</button>
+        </div>
+
+        <p id="paymentLeaderNote" class="leader-note">Only the group leader can record payments. Other members can view payment status and history.</p>
+
+        <div id="paymentForm" class="payment-form">
+          <div>
+            <label>Member</label>
+            <select id="paymentUser"></select>
+          </div>
+
+          <div>
+            <label>Month</label>
+            <input type="month" id="paymentMonth">
+          </div>
+
+          <div>
+            <label>Amount</label>
+            <input type="number" id="paymentAmount" min="1" step="0.01" placeholder="0">
+          </div>
+
+          <div>
+            <label>Notes</label>
+            <input type="text" id="paymentNotes" placeholder="Optional">
+          </div>
+
+          <button id="recordPaymentBtn" class="invite-btn" onclick="recordPayment()">Record Payment</button>
+        </div>
+
+        <p id="paymentMessage" class="payment-message"></p>
+
+        <h3 class="payment-section-title">Member Payment Status</h3>
+        <div id="paymentSummary" class="payment-summary-list"></div>
+
+        <h3 class="payment-section-title">Payment History</h3>
+        <div id="paymentsList"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div id="inviteFriendModal" class="modal-overlay">
+  <div class="modal-card invite-modal-card">
+    <button class="close-btn" onclick="closeInviteFriendModal()">← Back</button>
+
+    <h2>Invite Friend</h2>
+    <p class="modal-subtitle">Select a friend to invite into this group.</p>
+
+    <div id="friendsInviteList" class="friends-invite-list"></div>
+  </div>
+</div>
+
+<script src="js/group-details.js"></script>
+</body>
+</html>

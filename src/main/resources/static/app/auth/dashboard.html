@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GroupFund Dashboard</title>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="css/auth.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <script>
+    if (!localStorage.getItem("token")) {
+        window.location.replace("login.html");
+    }
+  </script>
+</head>
+<body class="dashboard-body">
+
+<div class="dashboard-layout">
+
+  <aside class="sidebar">
+    <h2>GroupFund</h2>
+    <a href="dashboard.html" class="active">Dashboard</a>
+    <a href="../profile/profile.html">Profile</a>
+    <a href="../friends/friends.html">Friends</a>
+    <a href="../group/my-group.html">My Group</a>
+    <a href="../savings/savings.html">Savings</a>
+    <a href="../loans/loans.html">Loans</a>
+    <button id="logoutBtn">Logout</button>
+  </aside>
+  <div id="sidebarOverlay" class="sidebar-overlay"></div>
+  <main class="main-content">
+    <button id="menuBtn" class="menu-btn">&#9776;</button>
+    <div class="topbar">
+      <div>
+        <h1>Dashboard</h1>
+        <p id="welcomeText">Welcome back</p>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Total Groups</h3>
+        <p id="totalGroups">0</p>
+      </div>
+
+      <div class="stat-card">
+        <h3>Monthly Savings</h3>
+        <p id="monthlySavings">₹0</p>
+      </div>
+
+      <div class="stat-card">
+        <h3>Active Loan</h3>
+        <p id="activeLoan">₹0</p>
+      </div>
+
+      <div class="stat-card">
+        <h3>Pending Dues</h3>
+        <p id="pendingDues">₹0</p>
+      </div>
+    </div>
+
+    <div class="dashboard-section">
+      <h2>Quick Actions</h2>
+      <div class="action-buttons">
+        <button onclick="goToCreateGroup()">Create Group</button>
+        <button onclick="goToInvitations()">Join Group</button>
+        <button onclick="goToSavings()">View Savings</button>
+        <button onclick="goToLoans()">View Loans</button>
+      </div>
+    </div>
+
+    <div class="dashboard-section">
+      <h2>Recent Activities</h2>
+      <div id="recentActivities" class="activity-list"><p class="empty-text">Loading recent activities...</p></div>
+    </div>
+  </main>
+
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

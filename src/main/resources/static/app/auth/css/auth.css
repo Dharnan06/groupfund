@@ -1,0 +1,208 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #e8f5e9, #a5d6a7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+}
+
+.card {
+    background: white;
+    border-radius: 20px;
+    padding: 35px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+}
+
+.logo {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.logo h1 {
+    color: #2e7d32;
+    font-size: 28px;
+}
+
+.logo p {
+    color: #64748b;
+    margin-top: 5px;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 15px;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #2e7d32;
+}
+
+.btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    background: #2e7d32;
+    color: white;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn:hover {
+    background: #1b5e20;
+}
+
+.link {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.link a {
+    color: #2e7d32;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.message {
+    margin-top: 15px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.success {
+    color: green;
+}
+
+.error {
+    color: red;
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(6px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.otp-card {
+    background: white;
+    width: 380px;
+    padding: 30px;
+    border-radius: 18px;
+    text-align: center;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+}
+
+.otp-card h2 {
+    color: #2e7d32;
+    margin-bottom: 10px;
+}
+
+.otp-card p {
+    color: #64748b;
+    margin-bottom: 8px;
+}
+
+.otp-card h4 {
+    color: #334155;
+    margin-bottom: 22px;
+}
+
+.otp-inputs {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 22px;
+}
+
+.otp-inputs input {
+    width: 45px;
+    height: 50px;
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+}
+
+.otp-inputs input:focus {
+    outline: none;
+    border-color: #2e7d32;
+}
+.otp-card {
+    position: relative;
+}
+
+.close-btn {
+    position: absolute;
+    top: 16px;
+    left: 18px;
+    border: none;
+    background: transparent;
+    font-size: 15px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+}
+#forgotModal .otp-card {
+    max-width: 470px;
+    padding: 38px;
+}
+
+#forgotOtpSection {
+    margin-top: 22px;
+}
+
+#forgotOtpSection .otp-inputs {
+    margin-top: 18px;
+    margin-bottom: 22px;
+}
+
+#sendForgotOtpBtn {
+    margin-top: 8px;
+}
+
+#resetPasswordSection {
+    margin-top: 22px;
+}
+
+#forgotMessage {
+    margin-top: 20px;
+}
+#forgotModal .otp-inputs input {
+    width: 48px;
+    height: 54px;
+}

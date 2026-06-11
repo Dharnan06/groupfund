@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>GroupFund Friends</title>
+    <link rel="stylesheet" href="css/friends.css">
+</head>
+<body>
+
+<div class="layout">
+
+    <aside class="sidebar" id="sidebar">
+        <h2>GroupFund</h2>
+
+        <a href="../auth/dashboard.html">Dashboard</a>
+        <a href="../profile/profile.html">Profile</a>
+        <a class="active" href="friends.html">Friends</a>
+        <a href="../group/my-group.html">My Group</a>
+        <a href="../savings/savings.html">Savings</a>
+        <a href="../loans/loans.html">Loans</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </aside>
+
+    <main class="main-content">
+        <button class="menu-btn" id="menuBtn">&#9776;</button>
+
+        <div class="top-bar">
+            <div>
+                <h1>Friends</h1>
+                <p>Search members, manage requests, and view your friends.</p>
+            </div>
+
+            <div class="notification-wrapper">
+                <button id="notificationBtn" class="notification-btn">
+                    <span class="bell-icon">&#128276;</span>
+                    <span id="requestCount">0</span>
+                </button>
+
+                <div id="requestDropdown" class="request-dropdown">
+                    <h3>Friend Requests <span id="pendingCountText">(0)</span></h3>
+                    <div id="requestList"></div>
+                </div>
+            </div>
+        </div>
+
+        <section class="search-card">
+            <h2>Find Friends</h2>
+
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search by name or mobile number">
+                <button id="searchBtn">Search</button>
+            </div>
+
+            <div id="searchResults" class="results-grid"></div>
+        </section>
+
+        <section class="friends-card">
+            <h2>My Friends <span id="friendsCount">(0)</span></h2>
+            <div id="friendsList" class="friends-grid"></div>
+        </section>
+    </main>
+
+</div>
+
+<script src="js/friends.js"></script>
+</body>
+</html>

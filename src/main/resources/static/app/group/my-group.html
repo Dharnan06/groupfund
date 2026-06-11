@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>GroupFund My Group</title>
+    <link rel="stylesheet" href="css/my-group.css">
+</head>
+<body>
+
+<div class="layout">
+
+    <aside class="sidebar" id="sidebar">
+        <h2>GroupFund</h2>
+        <a href="../auth/dashboard.html">Dashboard</a>
+        <a href="../profile/profile.html">Profile</a>
+        <a href="../friends/friends.html">Friends</a>
+        <a class="active" href="my-group.html">My Group</a>
+        <a href="../savings/savings.html">Savings</a>
+        <a href="../loans/loans.html">Loans</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </aside>
+
+    <main class="main-content">
+        <button class="menu-btn" id="menuBtn">&#9776;</button>
+
+        <div class="top-bar">
+            <div>
+                <h1>My Group</h1>
+                <p>Create groups, manage invitations, and view your group members.</p>
+            </div>
+
+            <button class="create-btn" onclick="showCreateGroupModal()">
+                Create Group
+            </button>
+        </div>
+
+        <section class="group-card">
+            <h2>My Groups <span id="groupCount">(0)</span></h2>
+            <div id="myGroupsList" class="group-list"></div>
+        </section>
+
+        <section class="group-card">
+            <h2>Group Invitations <span id="invitationCount">(0)</span></h2>
+            <div id="invitationList" class="group-list"></div>
+        </section>
+
+    </main>
+</div>
+
+<div id="createGroupModal" class="modal-overlay">
+    <div class="modal-card">
+        <button class="close-btn" onclick="closeCreateGroupModal()">Back</button>
+
+        <h2>Create Group</h2>
+
+        <label>Group Name</label>
+        <input type="text" id="groupName">
+
+        <label>Group Type</label>
+        <select id="groupType" onchange="toggleGroupFields()">
+            <option value="">Select Type</option>
+            <option value="SAVINGS">Savings Group</option>
+            <option value="CUSTOM_LOAN">Custom Loan Group</option>
+        </select>
+
+        <label>Member Limit (Minimum 5, Maximum 20)</label>
+        <input type="number" id="targetMembers" min="5" max="20" value="5" placeholder="Example: 10">
+
+        <p class="helper-text">Payments are locked until 5+ members join, leader requests activation, and all accepted members approve.</p>
+
+        <label>Start Date</label>
+        <input type="date" id="startDate">
+
+        <div id="savingsFields" class="hidden">
+            <label>Monthly Savings Amount</label>
+            <input type="number" id="monthlySavingsAmount">
+        </div>
+
+        <div id="loanFields" class="hidden">
+            <label>Loan Source</label>
+            <input type="text" id="loanSource">
+
+            <label>Loan Amount</label>
+            <input type="number" id="loanAmount">
+
+            <label>Duration Months</label>
+            <input type="number" id="durationMonths">
+
+            <label>Monthly EMI</label>
+            <input type="number" id="monthlyEmi">
+
+            <label>Interest Rate</label>
+            <input type="number" id="interestRate">
+        </div>
+
+        <button class="submit-btn" onclick="createGroup()">Create Group</button>
+        <p id="createGroupMessage" class="message"></p>
+    </div>
+</div>
+<div id="groupDetailsModal" class="modal-overlay">
+    <div class="modal-card details-modal-card">
+        <button class="close-btn" onclick="closeGroupDetailsModal()">← Back</button>
+        <h2>Group Details</h2>
+        <div id="groupDetails"></div>
+    </div>
+</div>
+<script src="js/my-group.js"></script>
+</body>
+</html>

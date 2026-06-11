@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GroupFund Profile</title>
+  <link rel="stylesheet" href="../auth/css/auth.css">
+  <link rel="stylesheet" href="../auth/css/dashboard.css">
+  <link rel="stylesheet" href="css/profile.css">
+
+  <script>
+    if (!localStorage.getItem("token")) {
+        window.location.replace("../auth/login.html");
+    }
+  </script>
+</head>
+
+<body class="dashboard-body">
+
+<div class="dashboard-layout">
+
+  <aside class="sidebar">
+    <h2>GroupFund</h2>
+    <a href="../auth/dashboard.html">Dashboard</a>
+    <a href="profile.html" class="active">Profile</a>
+    <a href="../friends/friends.html">Friends</a>
+    <a href="../group/my-group.html">My Group</a>
+    <a href="../savings/savings.html">Savings</a>
+    <a href="../loans/loans.html">Loans</a>
+    <button id="logoutBtn">Logout</button>
+  </aside>
+
+  <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+  <main class="main-content">
+    <button id="menuBtn" class="menu-btn">&#9776;</button>
+
+    <section class="profile-header-card">
+      <div class="profile-left">
+
+        <div class="profile-image-box" id="profileImageBox">
+          <img id="profileImage" src="" alt="Profile">
+          <div class="image-hover-overlay">Change Photo</div>
+          <span id="profilePercent">0%</span>
+        </div>
+
+        <div class="profile-info">
+          <div class="name-row">
+            <h1 id="profileName">Your Name</h1>
+          </div>
+
+          <p id="profileOccupation">Occupation not added</p>
+          <p id="profileLocation">Location not added</p>
+
+          <div class="profile-meta">
+            <span id="profileGender">Gender</span>
+            <span id="profileDob">DOB</span>
+            <span id="profileMobile">Mobile</span>
+            <span id="profileEmail">Email</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-missing-box">
+        <h3>Profile Strength</h3>
+        <p id="profileStrengthText">Complete your profile to create groups easily.</p>
+
+        <div class="achievement-list">
+          <p>Email Verified</p>
+          <p>Profile Created</p>
+          <p id="photoAchievement">Photo Uploaded</p>
+          <p id="groupEligibility">Eligible to Create Group</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="profile-content">
+
+      <div class="quick-links">
+        <h3>Quick links</h3>
+        <a id="personalLink" class="quick-link active-link" onclick="showProfileSection('personal')">Personal Details</a>
+        <a id="familyLink" class="quick-link" onclick="showProfileSection('family')">Family Details</a>
+        <a id="occupationLink" class="quick-link" onclick="showProfileSection('occupation')">Occupation</a>
+        <a id="verificationLink" class="quick-link" onclick="showProfileSection('verification')">Verification</a>
+      </div>
+
+      <div class="profile-details-card">
+        <div class="section-header">
+          <h2 id="sectionTitle">Personal Details</h2>
+          <button id="sectionEditBtn" class="section-edit-btn">Edit</button>
+        </div>
+
+        <div id="sectionContent" class="details-grid"></div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<div id="editSectionModal" class="modal-overlay">
+  <div class="edit-profile-card">
+    <button id="closeSectionEdit" class="close-btn">&#8592; Back</button>
+
+    <h2 id="editModalTitle">Edit Details</h2>
+
+    <div id="editSectionFields" class="edit-grid"></div>
+
+    <button id="saveSectionBtn" class="save-profile-btn">Save Changes</button>
+    <p id="sectionEditMessage" class="message"></p>
+  </div>
+</div>
+
+<div id="topProfileModal" class="modal-overlay">
+  <div class="edit-profile-card photo-upload-card">
+    <button id="closeTopProfile" class="close-btn">&#8592; Back</button>
+
+    <h2>Upload Profile Photo</h2>
+    <p class="photo-upload-subtitle">A clear profile photo helps others identify you easily.</p>
+
+    <div class="photo-preview-box">
+      <img id="photoPreview" src="" alt="Profile Preview">
+    </div>
+
+    <div class="edit-field full-width">
+      <label class="upload-title">Choose New Photo</label>
+
+      <label for="editProfileImage" class="custom-file-upload">
+        Choose Photo
+      </label>
+
+      <input type="file" id="editProfileImage" accept="image/*" hidden>
+
+      <p id="selectedFileName" class="selected-file-name">No file chosen</p>
+    </div>
+
+    <button id="saveTopProfileBtn" class="save-profile-btn">Upload Photo</button>
+    <button id="removeProfilePhotoBtn" class="remove-photo-btn">
+      Remove Photo
+    </button>
+    <p id="topProfileMessage" class="message"></p>
+  </div>
+</div>
+
+<script src="../auth/js/config.js"></script>
+<script src="../auth/js/dashboard.js"></script>
+<script src="js/profile.js"></script>
+
+</body>
+</html>

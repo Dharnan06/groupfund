@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>GroupFund Savings</title>
+  <link rel="stylesheet" href="css/savings.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <h2>GroupFund</h2>
+    <a href="../auth/dashboard.html">Dashboard</a>
+    <a href="../profile/profile.html">Profile</a>
+    <a href="../friends/friends.html">Friends</a>
+    <a href="../group/my-group.html">My Group</a>
+    <a class="active" href="savings.html">Savings</a>
+    <a href="../loans/loans.html">Loans</a>
+    <a href="#" onclick="logout()">Logout</a>
+  </aside>
+
+  <main class="main-content">
+    <button class="menu-btn" id="menuBtn">☰</button>
+    <div class="top-bar">
+      <div>
+        <h1>Savings</h1>
+        <p>Create savings groups and view your own monthly savings history.</p>
+      </div>
+      <button class="primary-btn" onclick="openSavingsModal()">Start Savings Group</button>
+    </div>
+
+    <section class="stats-grid">
+      <div class="stat-card"><h3>Savings Groups</h3><p id="savingsGroupCount">0</p></div>
+      <div class="stat-card"><h3>Monthly Savings</h3><p id="totalMonthlySavings">₹0</p></div>
+      <div class="stat-card"><h3>This Month Paid</h3><p id="thisMonthPaid">₹0</p></div>
+      <div class="stat-card"><h3>This Month Pending</h3><p id="thisMonthPending">₹0</p></div>
+    </section>
+
+    <section class="content-card">
+      <h2>My Savings Groups</h2>
+      <div id="savingsList" class="list"></div>
+    </section>
+  </main>
+</div>
+
+<div id="savingsModal" class="modal-overlay">
+  <div class="modal-card enhanced-modal">
+    <div class="modal-header">
+      <div>
+        <h2>Start Savings Group</h2>
+        <p>Create a monthly savings group. After members join, the leader can mark each member’s monthly payment.</p>
+      </div>
+      <button class="close-btn" onclick="closeSavingsModal()">Back</button>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-field full">
+        <label>Group Name</label>
+        <input type="text" id="groupName" placeholder="Example: Monthly Women Savings">
+      </div>
+      <div class="form-field">
+        <label>Monthly Savings Amount</label>
+        <input type="number" id="monthlySavingsAmount" min="1" placeholder="1000">
+      </div>
+      <div class="form-field">
+        <label>Member Limit</label>
+        <input type="number" id="targetMembers" min="5" max="20" value="5" placeholder="5 to 20">
+      </div>
+      <div class="form-field">
+        <label>Start Date</label>
+        <input type="date" id="startDate">
+      </div>
+    </div>
+
+    <div class="preview-card">
+      <span>Each member pays monthly</span>
+      <strong id="savingsPreviewAmount">₹0</strong>
+    </div>
+
+    <button class="submit-btn wide" onclick="createSavingsGroup()">Create Savings Group</button>
+    <p id="savingsMessage" class="message"></p>
+  </div>
+</div>
+
+<script src="js/savings.js"></script>
+</body>
+</html>

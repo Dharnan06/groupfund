@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GroupFund OTP Verification</title>
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+
+<div class="container">
+  <div class="card otp-card">
+    <button id="backBtn" class="close-btn">&#8592; Back</button>
+
+    <div class="logo">
+      <h1>GroupFund</h1>
+      <p>Email Verification</p>
+    </div>
+
+    <h2>Verify Your Email</h2>
+    <p>We sent a 6-digit OTP to</p>
+    <h4 id="otpEmailText"></h4>
+
+    <div class="otp-inputs">
+      <input type="text" maxlength="1">
+      <input type="text" maxlength="1">
+      <input type="text" maxlength="1">
+      <input type="text" maxlength="1">
+      <input type="text" maxlength="1">
+      <input type="text" maxlength="1">
+    </div>
+
+    <button id="verifyOtpBtn" class="btn">Verify OTP</button>
+
+    <p id="otpMessage" class="message"></p>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/otp.js"></script>
+</body>
+</html>
