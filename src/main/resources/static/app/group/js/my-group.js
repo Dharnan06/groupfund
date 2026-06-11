@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:8080/api/groups";
+const API_BASE_URL = `${window.location.origin}/api/groups`;
 const token = localStorage.getItem("token");
 
 const sidebar = document.getElementById("sidebar");

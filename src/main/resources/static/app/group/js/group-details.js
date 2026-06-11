@@ -1,6 +1,7 @@
-const API_BASE_URL = "http://localhost:8080/api/groups";
-const FRIENDS_API_BASE_URL = "http://localhost:8080/api/friends";
-const PAYMENTS_API_BASE_URL = "http://localhost:8080/api/payments";
+const BACKEND_URL = window.location.origin;
+const API_BASE_URL = `${BACKEND_URL}/api/groups`;
+const FRIENDS_API_BASE_URL = `${BACKEND_URL}/api/friends`;
+const PAYMENTS_API_BASE_URL = `${BACKEND_URL}/api/payments`;
 
 const token = localStorage.getItem("token");
 const loggedInEmail = localStorage.getItem("email");

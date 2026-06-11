@@ -1,5 +1,5 @@
-const API_BASE_URL = "http://localhost:8080/api/friends";
-const BACKEND_URL = "http://localhost:8080";
+const BACKEND_URL = window.location.origin;
+const API_BASE_URL = `${BACKEND_URL}/api/friends`;
 
 const token = localStorage.getItem("token");
 

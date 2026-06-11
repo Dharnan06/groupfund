@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:8080";
+const API_BASE_URL = window.location.origin;
 const token = localStorage.getItem("token");
 let loanGroups = [];
 let loansLoading = false;

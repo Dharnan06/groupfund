@@ -4,7 +4,7 @@ if (!profileToken) {
     window.location.href = "../auth/login.html";
 }
 
-const API_IMAGE_BASE_URL = "http://localhost:8080";
+const API_IMAGE_BASE_URL = window.location.origin;
 const DEFAULT_PROFILE_IMAGE = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 let currentProfile = null;
 let currentSection = "personal";

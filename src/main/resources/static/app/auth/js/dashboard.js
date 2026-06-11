@@ -1,5 +1,5 @@
 const token = localStorage.getItem("token");
-const API_ROOT = "http://localhost:8080";
+const API_ROOT = window.location.origin;
 
 const isInsideProfileFolder = window.location.pathname.includes("/profile/");
 
