@@ -52,7 +52,24 @@ function updateTopProfile(p) {
     const profileImg = document.getElementById("profileImage");
 
     if (p.profileImageUrl) {
-        profileImg.src = API_IMAGE_BASE_URL + p.profileImageUrl;
+        let imageUrl = p.profileImageUrl;
+
+        // Fix wrongly saved Cloudinary URL like https//res.cloudinary.com
+        if (imageUrl.startsWith("https//")) {
+            imageUrl = imageUrl.replace("https//", "https://");
+        }
+
+        // Cloudinary full URL
+        if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+            profileImg.src = imageUrl.replace(
+                "/upload/",
+                "/upload/w_300,h_300,c_fill,q_auto,f_auto/"
+            );
+        }
+        // Local image path
+        else {
+            profileImg.src = API_IMAGE_BASE_URL + imageUrl;
+        }
     } else {
         profileImg.src = DEFAULT_PROFILE_IMAGE;
     }

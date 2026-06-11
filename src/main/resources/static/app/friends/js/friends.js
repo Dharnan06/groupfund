@@ -24,8 +24,21 @@ let currentFriends = [];
 
 function getProfileImage(url) {
     if (!url) return defaultImage;
-    if (url.startsWith("http")) return url;
-    return BACKEND_URL + url;
+
+    let imageUrl = url;
+
+    if (imageUrl.startsWith("https//")) {
+        imageUrl = imageUrl.replace("https//", "https://");
+    }
+
+    if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+        return imageUrl.replace(
+            "/upload/",
+            "/upload/w_150,h_150,c_fill,q_auto,f_auto/"
+        );
+    }
+
+    return BACKEND_URL + imageUrl;
 }
 
 if (!token) {

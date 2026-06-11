@@ -83,14 +83,21 @@ async function api(url) {
     return result.data;
 }
 
+function setTextIfExists(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.innerText = value;
+    }
+}
+
 async function loadDashboardStats() {
     try {
         const data = await api(`${API_ROOT}/api/groups/dashboard-stats`);
         if (data) {
-            document.getElementById("totalGroups").innerText = data.totalGroups || 0;
-            document.getElementById("monthlySavings").innerText = formatCurrency(data.monthlySavings);
-            document.getElementById("activeLoan").innerText = formatCurrency(data.activeLoan);
-            document.getElementById("pendingDues").innerText = formatCurrency(data.pendingDues);
+            setTextIfExists("totalGroups", data.totalGroups || 0);
+            setTextIfExists("monthlySavings", formatCurrency(data.monthlySavings));
+            setTextIfExists("activeLoan", formatCurrency(data.activeLoan));
+            setTextIfExists("pendingDues", formatCurrency(data.pendingDues));
         }
     } catch (error) {
         console.log("Failed to load dashboard stats", error);
