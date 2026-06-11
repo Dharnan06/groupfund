@@ -4,7 +4,6 @@ import jakarta.mail.internet.MimeMessage;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -33,7 +32,6 @@ public class MailService {
     @Value("classpath:templates/otp-email.html")
     private Resource otpEmailTemplate;
 
-    @Async
     public void sendProfessionalOtpEmail(String toEmail, Integer otp){
         try {
             MimeMessage message = javaMailSender.createMimeMessage();
@@ -49,7 +47,8 @@ public class MailService {
             helper.setText(htmlContent, true);
             javaMailSender.send(message);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to send OTP email");
+            e.printStackTrace();
+            throw new RuntimeException("Failed to send OTP email: " + e.getMessage(), e);
         }
     }
 }
