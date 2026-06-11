@@ -62,7 +62,8 @@ public class MailService {
 
             URI uri = URI.create("https://api.brevo.com/v3/smtp/email");
             HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
-
+            connection.setConnectTimeout(15000);
+            connection.setReadTimeout(15000);
             connection.setRequestMethod("POST");
             connection.setRequestProperty("accept", "application/json");
             connection.setRequestProperty("api-key", brevoApiKey);

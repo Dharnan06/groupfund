@@ -46,21 +46,42 @@ public class FriendService {
         List<ProfileEntity> profiles = profileRepository
                 .findByFullNameContainingIgnoreCaseOrUser_MobileNumberContaining(keyword, keyword);
 
+        List<ProfileEntity> filteredProfiles = profiles.stream()
+                .filter(profile -> !profile.getUser().getId().equals(loggedInUser.getId()))
+                .toList();
+
+        List<AuthEntity> users = filteredProfiles.stream()
+                .map(ProfileEntity::getUser)
+                .toList();
+
+        List<FriendRequestEntity> existingRequests = users.isEmpty()
+                ? List.of()
+                : friendRequestRepository.findRequestsBetweenUserAndUsers(loggedInUser, users);
+
         List<FriendSearchResponse> responseList = new ArrayList<>();
 
-        for (ProfileEntity profile : profiles) {
+        for (ProfileEntity profile : filteredProfiles) {
             AuthEntity user = profile.getUser();
-
-            if (user.getId().equals(loggedInUser.getId())) {
-                continue;
-            }
 
             String requestStatus = "NONE";
 
-            if (friendRequestRepository.existsBySenderAndReceiver(loggedInUser, user)) {
-                requestStatus = "REQUEST_SENT";
-            } else if (friendRequestRepository.existsBySenderAndReceiver(user, loggedInUser)) {
-                requestStatus = "REQUEST_RECEIVED";
+            for (FriendRequestEntity request : existingRequests) {
+                boolean loggedInUserSent = request.getSender().getId().equals(loggedInUser.getId())
+                        && request.getReceiver().getId().equals(user.getId());
+
+                boolean loggedInUserReceived = request.getReceiver().getId().equals(loggedInUser.getId())
+                        && request.getSender().getId().equals(user.getId());
+
+                if (loggedInUserSent || loggedInUserReceived) {
+                    if (request.getStatus() == FriendRequestStatus.ACCEPTED) {
+                        requestStatus = "FRIENDS";
+                    } else if (request.getStatus() == FriendRequestStatus.PENDING && loggedInUserSent) {
+                        requestStatus = "REQUEST_SENT";
+                    } else if (request.getStatus() == FriendRequestStatus.PENDING && loggedInUserReceived) {
+                        requestStatus = "REQUEST_RECEIVED";
+                    }
+                    break;
+                }
             }
 
             responseList.add(new FriendSearchResponse(
@@ -88,29 +109,24 @@ public class FriendService {
         }
 
         Optional<FriendRequestEntity> existingRequest =
-                friendRequestRepository.findBySenderAndReceiver(sender, receiver);
+                friendRequestRepository.findRequestBetweenUsers(sender, receiver);
 
         if (existingRequest.isPresent()) {
             FriendRequestEntity request = existingRequest.get();
-
-            if (request.getStatus() == FriendRequestStatus.PENDING) {
-                return ResponseEntity.status(409)
-                        .body(new ApiResponse(false, "Friend request already sent", null));
-            }
 
             if (request.getStatus() == FriendRequestStatus.ACCEPTED) {
                 return ResponseEntity.status(409)
                         .body(new ApiResponse(false, "You are already friends", null));
             }
-        }
-
-        Optional<FriendRequestEntity> reverseRequest =
-                friendRequestRepository.findBySenderAndReceiver(receiver, sender);
-
-        if (reverseRequest.isPresent()) {
-            FriendRequestEntity request = reverseRequest.get();
 
             if (request.getStatus() == FriendRequestStatus.PENDING) {
+                boolean alreadySentByMe = request.getSender().getId().equals(sender.getId());
+
+                if (alreadySentByMe) {
+                    return ResponseEntity.status(409)
+                            .body(new ApiResponse(false, "Friend request already sent", null));
+                }
+
                 request.setStatus(FriendRequestStatus.ACCEPTED);
                 friendRequestRepository.save(request);
 
@@ -119,9 +135,16 @@ public class FriendService {
                 );
             }
 
-            if (request.getStatus() == FriendRequestStatus.ACCEPTED) {
-                return ResponseEntity.status(409)
-                        .body(new ApiResponse(false, "You are already friends", null));
+            if (request.getStatus() == FriendRequestStatus.REJECTED) {
+                request.setSender(sender);
+                request.setReceiver(receiver);
+                request.setStatus(FriendRequestStatus.PENDING);
+                request.setCreatedAt(LocalDateTime.now());
+                friendRequestRepository.save(request);
+
+                return ResponseEntity.ok(
+                        new ApiResponse(true, "Friend request sent successfully", null)
+                );
             }
         }
 
@@ -142,17 +165,27 @@ public class FriendService {
         AuthEntity loggedInUser = getLoggedInUser();
 
         List<FriendRequestEntity> requests =
-                friendRequestRepository.findByReceiverAndStatus(
+                friendRequestRepository.findReceivedRequestsWithUsers(
                         loggedInUser,
                         FriendRequestStatus.PENDING
                 );
+
+        List<AuthEntity> senders = requests.stream()
+                .map(FriendRequestEntity::getSender)
+                .toList();
+
+        List<ProfileEntity> profiles = senders.isEmpty()
+                ? List.of()
+                : profileRepository.findByUserIn(senders);
 
         List<FriendRequestResponse> responseList = new ArrayList<>();
 
         for (FriendRequestEntity request : requests) {
             AuthEntity sender = request.getSender();
 
-            ProfileEntity profile = profileRepository.findByUser(sender)
+            ProfileEntity profile = profiles.stream()
+                    .filter(p -> p.getUser().getId().equals(sender.getId()))
+                    .findFirst()
                     .orElse(null);
 
             responseList.add(new FriendRequestResponse(
@@ -214,41 +247,32 @@ public class FriendService {
     public ResponseEntity<?> getFriendsList() {
         AuthEntity loggedInUser = getLoggedInUser();
 
-        List<FriendRequestEntity> sentAccepted =
-                friendRequestRepository.findBySenderAndStatus(
+        List<FriendRequestEntity> acceptedRequests =
+                friendRequestRepository.findAllByUserAndStatusWithUsers(
                         loggedInUser,
                         FriendRequestStatus.ACCEPTED
                 );
 
-        List<FriendRequestEntity> receivedAccepted =
-                friendRequestRepository.findByReceiverAndStatus(
-                        loggedInUser,
-                        FriendRequestStatus.ACCEPTED
-                );
+        List<AuthEntity> friends = acceptedRequests.stream()
+                .map(request -> request.getSender().getId().equals(loggedInUser.getId())
+                        ? request.getReceiver()
+                        : request.getSender())
+                .toList();
+
+        List<ProfileEntity> profiles = friends.isEmpty()
+                ? List.of()
+                : profileRepository.findByUserIn(friends);
 
         List<FriendRequestResponse> responseList = new ArrayList<>();
 
-        for (FriendRequestEntity request : sentAccepted) {
-            AuthEntity friend = request.getReceiver();
+        for (FriendRequestEntity request : acceptedRequests) {
+            AuthEntity friend = request.getSender().getId().equals(loggedInUser.getId())
+                    ? request.getReceiver()
+                    : request.getSender();
 
-            ProfileEntity profile = profileRepository.findByUser(friend)
-                    .orElse(null);
-
-            responseList.add(new FriendRequestResponse(
-                    request.getId(),
-                    friend.getId(),
-                    profile != null ? profile.getFullName() : friend.getName(),
-                    friend.getMobileNumber(),
-                    profile != null ? profile.getDistrict() : null,
-                    profile != null ? profile.getProfileImageUrl() : null,
-                    request.getStatus().name()
-            ));
-        }
-
-        for (FriendRequestEntity request : receivedAccepted) {
-            AuthEntity friend = request.getSender();
-
-            ProfileEntity profile = profileRepository.findByUser(friend)
+            ProfileEntity profile = profiles.stream()
+                    .filter(p -> p.getUser().getId().equals(friend.getId()))
+                    .findFirst()
                     .orElse(null);
 
             responseList.add(new FriendRequestResponse(

@@ -264,9 +264,9 @@ public class PaymentService {
     }
 
     private BigDecimal getPaidAmount(GroupEntity group, AuthEntity user, LocalDate paymentMonth) {
-        return paymentRepository.findByGroupAndUserAndPaymentMonth(group, user, paymentMonth).stream()
-                .map(PaymentEntity::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return nullToZero(
+                paymentRepository.sumPaidAmountByGroupUserAndMonth(group, user, paymentMonth)
+        );
     }
 
     private PaymentStatus calculateStatus(BigDecimal expectedAmount, BigDecimal paidAmount) {

@@ -10,7 +10,12 @@ import java.time.LocalDate;
 @Entity
 @Getter
 @Setter
-@Table(name = "user_profiles")
+@Table(
+        name = "user_profiles",
+        indexes = {
+                @Index(name = "idx_profile_user_id", columnList = "user_id")
+        }
+)
 public class ProfileEntity {
 
     @Id

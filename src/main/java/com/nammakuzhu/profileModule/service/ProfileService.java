@@ -1,5 +1,7 @@
 package com.nammakuzhu.profileModule.service;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.nammakuzhu.authModule.dto.ApiResponse;
 import com.nammakuzhu.authModule.entity.AuthEntity;
 import com.nammakuzhu.authModule.repository.AuthRepository;
@@ -10,11 +12,10 @@ import com.nammakuzhu.profileModule.repository.ProfileRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
+
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 public class ProfileService {
@@ -38,18 +39,30 @@ public class ProfileService {
                 .orElseThrow(() -> new RuntimeException("Logged-in user not found"));
     }
 
-    public ResponseEntity<?> createOrUpdateProfile(ProfileRequest request) {
-        AuthEntity user = getLoggedInUser();
-
-        ProfileEntity profile = profileRepository.findByUser(user)
+    private ProfileEntity getOrCreateProfile(AuthEntity user) {
+        ProfileEntity profile = profileRepository.findByUserWithAuth(user)
                 .orElse(new ProfileEntity());
 
-        profile.setUser(user);
+        if (profile.getUser() == null) {
+            profile.setUser(user);
+        }
+
+        return profile;
+    }
+
+    @Transactional
+    public ResponseEntity<?> createOrUpdateProfile(ProfileRequest request) {
+        AuthEntity user = getLoggedInUser();
+        ProfileEntity profile = getOrCreateProfile(user);
+
         if (request.getFullName() != null) {
             profile.setFullName(request.getFullName());
-            user.setName(request.getFullName());
-            authRepository.save(user);
+
+            if (!request.getFullName().equals(user.getName())) {
+                user.setName(request.getFullName());
+            }
         }
+
         if (request.getDateOfBirth() != null) profile.setDateOfBirth(request.getDateOfBirth());
         if (request.getGender() != null) profile.setGender(request.getGender());
 
@@ -65,57 +78,146 @@ public class ProfileService {
         if (request.getMaritalStatus() != null) profile.setMaritalStatus(request.getMaritalStatus());
         if (request.getAadhaarNumber() != null) profile.setAadhaarNumber(request.getAadhaarNumber());
 
-        int percentage = calculateProfileCompletion(profile);
-        profile.setProfileCompletionPercentage(percentage);
-        profile.setProfileCompleted(percentage == 100);
+        updateProfileCompletion(profile);
 
-        profileRepository.save(profile);
+        ProfileEntity savedProfile = profileRepository.save(profile);
 
-        return ResponseEntity.status(200)
-                .body(new ApiResponse(true, "Profile saved successfully", toResponse(profile)));
+        return ResponseEntity.ok(
+                new ApiResponse(true, "Profile saved successfully", toResponse(savedProfile))
+        );
     }
 
     public ResponseEntity<?> getMyProfile() {
         AuthEntity user = getLoggedInUser();
 
-        Optional<ProfileEntity> profile = profileRepository.findByUser(user);
+        ProfileEntity profile = profileRepository.findByUserWithAuth(user)
+                .orElse(null);
 
-        if (profile.isEmpty()) {
+        if (profile == null) {
             return ResponseEntity.status(404)
                     .body(new ApiResponse(false, "Profile not created yet", null));
         }
 
-        return ResponseEntity.status(200)
-                .body(new ApiResponse(true, "Profile fetched successfully", toResponse(profile.get())));
+        return ResponseEntity.ok(
+                new ApiResponse(true, "Profile fetched successfully", toResponse(profile))
+        );
+    }
+
+    @Transactional
+    public ResponseEntity<?> uploadProfileImage(MultipartFile file) {
+        try {
+            if (file == null || file.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(new ApiResponse(false, "Please choose an image", null));
+            }
+
+            if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
+                return ResponseEntity.badRequest()
+                        .body(new ApiResponse(false, "Only image files are allowed", null));
+            }
+
+            AuthEntity user = getLoggedInUser();
+            ProfileEntity profile = getOrCreateProfile(user);
+
+            Map uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "folder", "groupfund/profiles",
+                            "public_id", "user_" + user.getId(),
+                            "overwrite", true,
+                            "resource_type", "image"
+                    )
+            );
+
+            String imageUrl = String.valueOf(uploadResult.get("secure_url"));
+
+            if (imageUrl.startsWith("https//")) {
+                imageUrl = imageUrl.replace("https//", "https://");
+            }
+
+            profile.setProfileImageUrl(imageUrl);
+
+            updateProfileCompletion(profile);
+
+            ProfileEntity savedProfile = profileRepository.save(profile);
+
+            return ResponseEntity.ok(
+                    new ApiResponse(true, "Profile image uploaded successfully", toResponse(savedProfile))
+            );
+
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(new ApiResponse(false, "Failed to upload profile image: " + e.getMessage(), null));
+        }
+    }
+
+    @Transactional
+    public ResponseEntity<?> removeProfileImage() {
+        try {
+            AuthEntity user = getLoggedInUser();
+
+            ProfileEntity profile = profileRepository.findByUserWithAuth(user)
+                    .orElseThrow(() -> new RuntimeException("Profile not found"));
+
+            String publicId = "groupfund/profiles/user_" + user.getId();
+
+            cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+
+            profile.setProfileImageUrl(null);
+
+            updateProfileCompletion(profile);
+
+            ProfileEntity savedProfile = profileRepository.save(profile);
+
+            return ResponseEntity.ok(
+                    new ApiResponse(true, "Profile image removed successfully", toResponse(savedProfile))
+            );
+
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(new ApiResponse(false, "Failed to remove profile image: " + e.getMessage(), null));
+        }
+    }
+
+    private void updateProfileCompletion(ProfileEntity profile) {
+        int percentage = calculateProfileCompletion(profile);
+        profile.setProfileCompletionPercentage(percentage);
+        profile.setProfileCompleted(percentage == 100);
     }
 
     private int calculateProfileCompletion(ProfileEntity profile) {
         int total = 13;
         int completed = 0;
 
-        if (profile.getFullName() != null && !profile.getFullName().isBlank()) completed++;
-        if (profile.getProfileImageUrl() != null && !profile.getProfileImageUrl().isBlank()) completed++;
+        if (isFilled(profile.getFullName())) completed++;
+        if (isFilled(profile.getProfileImageUrl())) completed++;
         if (profile.getDateOfBirth() != null) completed++;
-        if (profile.getGender() != null && !profile.getGender().isBlank()) completed++;
-        if (profile.getAddress() != null && !profile.getAddress().isBlank()) completed++;
-        if (profile.getDistrict() != null && !profile.getDistrict().isBlank()) completed++;
-        if (profile.getState() != null && !profile.getState().isBlank()) completed++;
-        if (profile.getPincode() != null && !profile.getPincode().isBlank()) completed++;
-        if (profile.getFatherName() != null && !profile.getFatherName().isBlank()) completed++;
-        if (profile.getMotherName() != null && !profile.getMotherName().isBlank()) completed++;
-        if (profile.getOccupation() != null && !profile.getOccupation().isBlank()) completed++;
+        if (isFilled(profile.getGender())) completed++;
+        if (isFilled(profile.getAddress())) completed++;
+        if (isFilled(profile.getDistrict())) completed++;
+        if (isFilled(profile.getState())) completed++;
+        if (isFilled(profile.getPincode())) completed++;
+        if (isFilled(profile.getFatherName())) completed++;
+        if (isFilled(profile.getMotherName())) completed++;
+        if (isFilled(profile.getOccupation())) completed++;
         if (profile.getMonthlyIncome() != null) completed++;
-        if (profile.getMaritalStatus() != null && !profile.getMaritalStatus().isBlank()) completed++;
+        if (isFilled(profile.getMaritalStatus())) completed++;
 
         return (completed * 100) / total;
     }
 
+    private boolean isFilled(String value) {
+        return value != null && !value.isBlank();
+    }
+
     private ProfileResponse toResponse(ProfileEntity profile) {
+        AuthEntity user = profile.getUser();
+
         return new ProfileResponse(
                 profile.getId(),
                 profile.getFullName(),
-                profile.getUser().getEmail(),
-                profile.getUser().getMobileNumber(),
+                user.getEmail(),
+                user.getMobileNumber(),
                 profile.getProfileImageUrl(),
                 profile.getDateOfBirth(),
                 profile.getGender(),
@@ -134,74 +236,4 @@ public class ProfileService {
                 profile.getProfileCompletionPercentage()
         );
     }
-
-    public ResponseEntity<?> uploadProfileImage(MultipartFile file) {
-        try {
-            AuthEntity user = getLoggedInUser();
-
-            ProfileEntity profile = profileRepository.findByUser(user)
-                    .orElse(new ProfileEntity());
-
-            profile.setUser(user);
-
-            String publicId = "groupfund/profiles/user_" + user.getId();
-
-            Map uploadResult = cloudinary.uploader().upload(
-                    file.getBytes(),
-                    ObjectUtils.asMap(
-                            "folder", "groupfund/profiles",
-                            "public_id", "user_" + user.getId(),
-                            "overwrite", true,
-                            "resource_type", "image"
-                    )
-            );
-
-            String imageUrl = uploadResult.get("secure_url").toString();
-
-            profile.setProfileImageUrl(imageUrl);
-
-            int percentage = calculateProfileCompletion(profile);
-            profile.setProfileCompletionPercentage(percentage);
-            profile.setProfileCompleted(percentage == 100);
-
-            profileRepository.save(profile);
-
-            return ResponseEntity.status(200)
-                    .body(new ApiResponse(true, "Profile image uploaded successfully", toResponse(profile)));
-
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(new ApiResponse(false, "Failed to upload profile image: " + e.getMessage(), null));
-        }
-    }
-
-    public ResponseEntity<?> removeProfileImage() {
-        try {
-            AuthEntity user = getLoggedInUser();
-
-            ProfileEntity profile = profileRepository.findByUser(user)
-                    .orElseThrow(() -> new RuntimeException("Profile not found"));
-
-            String publicId = "groupfund/profiles/user_" + user.getId();
-
-            cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
-
-            profile.setProfileImageUrl(null);
-
-            int percentage = calculateProfileCompletion(profile);
-            profile.setProfileCompletionPercentage(percentage);
-            profile.setProfileCompleted(percentage == 100);
-
-            profileRepository.save(profile);
-
-            return ResponseEntity.ok(
-                    new ApiResponse(true, "Profile image removed successfully", toResponse(profile))
-            );
-
-        } catch (Exception e) {
-            return ResponseEntity.status(500)
-                    .body(new ApiResponse(false, "Failed to remove profile image: " + e.getMessage(), null));
-        }
-    }
-
 }

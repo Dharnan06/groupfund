@@ -140,13 +140,14 @@ public class GroupService {
             customLoanRepository.save(loan);
         }
 
-        return ResponseEntity.ok(new ApiResponse(true, "Group created successfully. Invite at least 4 more members, then request activation.", toResponse(group)));
+        return ResponseEntity.ok(new ApiResponse(true, "Group created successfully. Invite at least 4 more members, then request activation.", toResponse(group, leader)));
     }
 
-    private GroupResponse toResponse(GroupEntity group) {
-        AuthEntity loggedInUser = getLoggedInUser();
+    private GroupResponse toResponse(GroupEntity group, AuthEntity loggedInUser) {
         long acceptedCount = groupMemberRepository.countByGroupAndStatus(group, MemberStatus.ACCEPTED);
+
         syncGroupReadiness(group, acceptedCount);
+
         return new GroupResponse(
                 group.getId(),
                 group.getGroupName(),
@@ -162,18 +163,36 @@ public class GroupService {
 
     public ResponseEntity<?> inviteMember(InviteMemberRequest request) {
         AuthEntity leader = getLoggedInUser();
-        GroupEntity group = groupRepository.findById(request.getGroupId()).orElseThrow(() -> new RuntimeException("Group not found"));
 
-        if (!group.getLeader().getId().equals(leader.getId())) return ResponseEntity.status(403).body(new ApiResponse(false, "Only group leader can invite members", null));
-        if (group.getGroupStatus() == GroupStatus.ACTIVATION_PENDING) return bad("Activation voting is in progress. Finish activation before inviting more members.");
+        GroupEntity group = groupRepository.findById(request.getGroupId())
+                .orElseThrow(() -> new RuntimeException("Group not found"));
 
-        AuthEntity invitedUser = authRepository.findById(request.getUserId()).orElseThrow(() -> new RuntimeException("User not found"));
-        if (leader.getId().equals(invitedUser.getId())) return bad("Leader is already part of the group");
-        if (groupMemberRepository.existsByGroupAndUser(group, invitedUser)) return ResponseEntity.status(409).body(new ApiResponse(false, "User already invited or already in group", null));
+        if (!group.getLeader().getId().equals(leader.getId())) {
+            return ResponseEntity.status(403)
+                    .body(new ApiResponse(false, "Only group leader can invite members", null));
+        }
 
-        long activeOrPendingMembers = groupMemberRepository.findByGroup(group).stream()
-                .filter(member -> member.getStatus() == MemberStatus.ACCEPTED || member.getStatus() == MemberStatus.PENDING)
-                .count();
+        if (group.getGroupStatus() == GroupStatus.ACTIVATION_PENDING) {
+            return bad("Activation voting is in progress. Finish activation before inviting more members.");
+        }
+
+        AuthEntity invitedUser = authRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (leader.getId().equals(invitedUser.getId())) {
+            return bad("Leader is already part of the group");
+        }
+
+        if (groupMemberRepository.existsByGroupAndUser(group, invitedUser)) {
+            return ResponseEntity.status(409)
+                    .body(new ApiResponse(false, "User already invited or already in group", null));
+        }
+
+        long activeOrPendingMembers = groupMemberRepository.countByGroupAndStatusIn(
+                group,
+                List.of(MemberStatus.ACCEPTED, MemberStatus.PENDING)
+        );
+
         if (activeOrPendingMembers >= safeTargetMembers(group)) {
             return bad("This group already reached the selected member limit of " + safeTargetMembers(group));
         }
@@ -185,17 +204,32 @@ public class GroupService {
         member.setStatus(MemberStatus.PENDING);
         member.setInvitedAt(LocalDateTime.now());
         member.setActivationApproved(false);
+
         groupMemberRepository.save(member);
 
-        return ResponseEntity.ok(new ApiResponse(true, "Group invitation sent successfully", null));
+        return ResponseEntity.ok(
+                new ApiResponse(true, "Group invitation sent successfully", null)
+        );
     }
 
     public ResponseEntity<?> getMyPendingInvitations() {
         AuthEntity user = getLoggedInUser();
-        List<GroupInvitationResponse> response = groupMemberRepository.findByUserAndStatus(user, MemberStatus.PENDING).stream()
-                .map(invitation -> new GroupInvitationResponse(invitation.getId(), invitation.getGroup().getId(), invitation.getGroup().getGroupName(), invitation.getGroup().getGroupType(), invitation.getGroup().getLeader().getName()))
-                .toList();
-        return ResponseEntity.ok(new ApiResponse(true, "Group invitations fetched successfully", response));
+
+        List<GroupInvitationResponse> response =
+                groupMemberRepository.findByUserAndStatusWithGroupAndLeader(user, MemberStatus.PENDING)
+                        .stream()
+                        .map(invitation -> new GroupInvitationResponse(
+                                invitation.getId(),
+                                invitation.getGroup().getId(),
+                                invitation.getGroup().getGroupName(),
+                                invitation.getGroup().getGroupType(),
+                                invitation.getGroup().getLeader().getName()
+                        ))
+                        .toList();
+
+        return ResponseEntity.ok(
+                new ApiResponse(true, "Group invitations fetched successfully", response)
+        );
     }
 
     public ResponseEntity<?> acceptGroupInvitation(Long invitationId) {
@@ -230,48 +264,147 @@ public class GroupService {
 
     public ResponseEntity<?> getMyGroups() {
         AuthEntity user = getLoggedInUser();
-        List<GroupResponse> response = groupMemberRepository.findByUserAndStatus(user, MemberStatus.ACCEPTED).stream()
-                .map(member -> toResponse(member.getGroup()))
-                .toList();
-        return ResponseEntity.ok(new ApiResponse(true, "My groups fetched successfully", response));
+
+        List<GroupResponse> response =
+                groupMemberRepository.findByUserAndStatusWithGroupAndLeader(user, MemberStatus.ACCEPTED)
+                        .stream()
+                        .map(member -> toResponse(member.getGroup(), user))
+                        .toList();
+
+        return ResponseEntity.ok(
+                new ApiResponse(true, "My groups fetched successfully", response)
+        );
     }
 
     public ResponseEntity<?> getDashboardStats() {
         AuthEntity user = getLoggedInUser();
-        List<GroupEntity> groups = groupMemberRepository.findByUserAndStatus(user, MemberStatus.ACCEPTED).stream().map(GroupMemberEntity::getGroup).toList();
-        BigDecimal monthlySavings = groups.stream().filter(group -> group.getGroupType() == GroupType.SAVINGS)
-                .map(group -> savingsGroupRepository.findByGroup(group).map(s -> nullToZero(s.getMonthlySavingsAmount())).orElse(BigDecimal.ZERO)).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal activeLoan = groups.stream().filter(group -> group.getGroupType() == GroupType.CUSTOM_LOAN)
-                .map(group -> customLoanRepository.findByGroup(group).map(l -> nullToZero(l.getLoanAmount())).orElse(BigDecimal.ZERO)).reduce(BigDecimal.ZERO, BigDecimal::add);
-        DashboardStatsResponse response = new DashboardStatsResponse(groups.size(), monthlySavings, activeLoan, paymentService.getPendingDues(user, groups));
-        return ResponseEntity.ok(new ApiResponse(true, "Dashboard stats fetched successfully", response));
-    }
 
+        List<GroupEntity> groups =
+                groupMemberRepository.findAcceptedGroupsForDashboard(user, MemberStatus.ACCEPTED)
+                        .stream()
+                        .map(GroupMemberEntity::getGroup)
+                        .toList();
+
+        if (groups.isEmpty()) {
+            DashboardStatsResponse response = new DashboardStatsResponse(
+                    0,
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO
+            );
+
+            return ResponseEntity.ok(
+                    new ApiResponse(true, "Dashboard stats fetched successfully", response)
+            );
+        }
+
+        BigDecimal monthlySavings = savingsGroupRepository.sumMonthlySavingsByGroups(groups);
+        BigDecimal activeLoan = customLoanRepository.sumLoanAmountByGroups(groups);
+        BigDecimal pendingDues = paymentService.getPendingDues(user, groups);
+
+        DashboardStatsResponse response = new DashboardStatsResponse(
+                groups.size(),
+                nullToZero(monthlySavings),
+                nullToZero(activeLoan),
+                nullToZero(pendingDues)
+        );
+
+        return ResponseEntity.ok(
+                new ApiResponse(true, "Dashboard stats fetched successfully", response)
+        );
+    }
     public ResponseEntity<?> getGroupDetails(Long groupId) {
         AuthEntity user = getLoggedInUser();
-        GroupEntity group = groupRepository.findById(groupId).orElseThrow(() -> new RuntimeException("Group not found"));
-        if (!groupMemberRepository.existsByGroupAndUser(group, user)) return ResponseEntity.status(403).body(new ApiResponse(false, "You are not allowed to view this group", null));
 
-        List<GroupMemberEntity> groupMembers = groupMemberRepository.findByGroup(group);
-        List<GroupMemberResponse> members = groupMembers.stream().map(member -> new GroupMemberResponse(member.getUser().getId(), member.getUser().getName(), member.getUser().getMobileNumber(), member.getRole(), member.getStatus())).toList();
-        long acceptedCount = groupMembers.stream().filter(member -> member.getStatus() == MemberStatus.ACCEPTED).count();
+        GroupEntity group = groupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        if (!groupMemberRepository.existsByGroupAndUser(group, user)) {
+            return ResponseEntity.status(403)
+                    .body(new ApiResponse(false, "You are not allowed to view this group", null));
+        }
+
+        List<GroupMemberEntity> groupMembers = groupMemberRepository.findByGroupWithUser(group);
+
+        List<GroupMemberResponse> members = groupMembers.stream()
+                .map(member -> new GroupMemberResponse(
+                        member.getUser().getId(),
+                        member.getUser().getName(),
+                        member.getUser().getMobileNumber(),
+                        member.getRole(),
+                        member.getStatus()
+                ))
+                .toList();
+
+        long acceptedCount = groupMembers.stream()
+                .filter(member -> member.getStatus() == MemberStatus.ACCEPTED)
+                .count();
+
         syncGroupReadiness(group, acceptedCount);
 
-        SavingsDetailsResponse savingsDetails = savingsGroupRepository.findByGroup(group).map(s -> new SavingsDetailsResponse(s.getMonthlySavingsAmount(), s.getSavingsStartDate())).orElse(null);
-        LoanDetailsResponse loanDetails = customLoanRepository.findByGroup(group).map(l -> new LoanDetailsResponse(l.getLoanSource(), l.getLoanAmount(), l.getDurationMonths(), l.getMonthlyEmi(), l.getInterestRate(), l.getLoanStartDate())).orElse(null);
+        SavingsDetailsResponse savingsDetails = savingsGroupRepository.findByGroup(group)
+                .map(s -> new SavingsDetailsResponse(
+                        s.getMonthlySavingsAmount(),
+                        s.getSavingsStartDate()
+                ))
+                .orElse(null);
 
-        MemberRole currentUserRole = groupMembers.stream().filter(member -> member.getUser().getId().equals(user.getId()) && member.getStatus() == MemberStatus.ACCEPTED).map(GroupMemberEntity::getRole).findFirst().orElse(null);
-        boolean isLeader = group.getLeader().getId().equals(user.getId()) || currentUserRole == MemberRole.LEADER;
+        LoanDetailsResponse loanDetails = customLoanRepository.findByGroup(group)
+                .map(l -> new LoanDetailsResponse(
+                        l.getLoanSource(),
+                        l.getLoanAmount(),
+                        l.getDurationMonths(),
+                        l.getMonthlyEmi(),
+                        l.getInterestRate(),
+                        l.getLoanStartDate()
+                ))
+                .orElse(null);
+
+        MemberRole currentUserRole = groupMembers.stream()
+                .filter(member -> member.getUser().getId().equals(user.getId())
+                        && member.getStatus() == MemberStatus.ACCEPTED)
+                .map(GroupMemberEntity::getRole)
+                .findFirst()
+                .orElse(null);
+
+        boolean isLeader = group.getLeader().getId().equals(user.getId())
+                || currentUserRole == MemberRole.LEADER;
+
         int activationRequired = (int) acceptedCount;
-        int activationApproved = (int) groupMembers.stream().filter(m -> m.getStatus() == MemberStatus.ACCEPTED && Boolean.TRUE.equals(m.getActivationApproved())).count();
-        boolean currentApproved = groupMembers.stream().anyMatch(m -> m.getUser().getId().equals(user.getId()) && Boolean.TRUE.equals(m.getActivationApproved()));
+
+        int activationApproved = (int) groupMembers.stream()
+                .filter(m -> m.getStatus() == MemberStatus.ACCEPTED
+                        && Boolean.TRUE.equals(m.getActivationApproved()))
+                .count();
+
+        boolean currentApproved = groupMembers.stream()
+                .anyMatch(m -> m.getUser().getId().equals(user.getId())
+                        && Boolean.TRUE.equals(m.getActivationApproved()));
 
         GroupDetailsResponse response = new GroupDetailsResponse(
-                group.getId(), group.getGroupName(), group.getGroupType(), group.getGroupStatus(), group.getLeader().getName(),
-                (int) acceptedCount, safeTargetMembers(group), group.getStartDate(), isLeader, group.getLeader().getId(), user.getId(), currentUserRole,
-                activationApproved, activationRequired, currentApproved, members, savingsDetails, loanDetails
+                group.getId(),
+                group.getGroupName(),
+                group.getGroupType(),
+                group.getGroupStatus(),
+                group.getLeader().getName(),
+                (int) acceptedCount,
+                safeTargetMembers(group),
+                group.getStartDate(),
+                isLeader,
+                group.getLeader().getId(),
+                user.getId(),
+                currentUserRole,
+                activationApproved,
+                activationRequired,
+                currentApproved,
+                members,
+                savingsDetails,
+                loanDetails
         );
-        return ResponseEntity.ok(new ApiResponse(true, "Group details fetched successfully", response));
+
+        return ResponseEntity.ok(
+                new ApiResponse(true, "Group details fetched successfully", response)
+        );
     }
 
     public ResponseEntity<?> requestActivation(Long groupId) {

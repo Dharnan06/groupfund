@@ -14,7 +14,13 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Setter
-@Table(name = "group_payments")
+@Table(
+        name = "group_payments",
+        indexes = {
+                @Index(name = "idx_payment_group_user_month", columnList = "group_id, user_id, payment_month"),
+                @Index(name = "idx_payment_group_month", columnList = "group_id, payment_month")
+        }
+)
 public class PaymentEntity {
 
     @Id
